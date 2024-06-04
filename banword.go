@@ -87,6 +87,7 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 		}
 	}
 
+	// 정규식으로 제거된 단어 보정 처리
 	if removeTexts != nil && len(removeTexts) > 0 && len(detectedList) > 0 {
 		for i, detect := range detectedList {
 			for _, re := range removeTexts {

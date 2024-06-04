@@ -1,4 +1,4 @@
-module banword
+module github.com/i31pc17/banword
 
 go 1.22
 

@@ -47,7 +47,7 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 		}
 	}
 
-	var detected []Detected
+	var detectedList []Detected
 	checkTextRune := []rune(checkText)
 
 	m := new(goahocorasick.Machine)
@@ -65,10 +65,10 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 			Allowed:  false,
 		}
 		item.OriWord = item.Word
-		detected = append(detected, item)
+		detectedList = append(detectedList, item)
 	}
 
-	if len(detector.allowWords) > 0 && len(detected) > 0 {
+	if len(detector.allowWords) > 0 && len(detectedList) > 0 {
 		if err := m.Build(detector.getAllowWords()); err != nil {
 			return "", nil, err
 		}
@@ -78,17 +78,17 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 			startPos := t.Pos
 			endPos := t.Pos + len(t.Word)
 
-			for i, d := range detected {
+			for i, d := range detectedList {
 				if d.StartPos >= startPos && d.EndPos <= endPos {
-					detected[i].Allowed = true
-					detected[i].AllowWord = string(t.Word)
+					detectedList[i].Allowed = true
+					detectedList[i].AllowWord = string(t.Word)
 				}
 			}
 		}
 	}
 
-	if removeTexts != nil && len(removeTexts) > 0 && len(detected) > 0 {
-		for i, detect := range detected {
+	if removeTexts != nil && len(removeTexts) > 0 && len(detectedList) > 0 {
+		for i, detect := range detectedList {
 			for _, re := range removeTexts {
 				if re.pos >= detect.EndPos {
 					break
@@ -100,12 +100,12 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 			}
 			detect.Length = detect.EndPos - detect.StartPos
 			detect.OriWord = string(textRune[detect.StartPos:detect.EndPos])
-			detected[i] = detect
+			detectedList[i] = detect
 		}
 	}
 
-	if len(detected) > 0 {
-		for i, d := range detected {
+	if len(detectedList) > 0 {
+		for i, d := range detectedList {
 			// 공백을 제외하고 단어에 정규식에 제외된 문자가 너무 많이 포함되면 금칙어 제외
 			if !d.Allowed && removeTexts != nil {
 				wordLen := utf8.RuneCountInString(d.Word)
@@ -116,7 +116,7 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 					wordLen *= 2
 				}
 				if oriWordLen > wordLen {
-					detected[i].Allowed = true
+					detectedList[i].Allowed = true
 				}
 			}
 
@@ -128,7 +128,7 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 		}
 	}
 
-	return string(textRune), detected, nil
+	return string(textRune), detectedList, nil
 }
 
 func (detector *Detection) getBanWords() [][]rune {

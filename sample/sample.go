@@ -1,8 +1,8 @@
 package main
 
 import (
-	"banword"
 	"fmt"
+	"github.com/i31pc17/banword"
 )
 
 func main() {

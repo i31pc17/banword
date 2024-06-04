@@ -13,13 +13,13 @@ type Detection struct {
 }
 
 type Detected struct {
-	oriWord   string
-	word      string
-	allowWord string
-	startPos  int
-	endPos    int
-	length    int
-	allowed   bool
+	OriWord   string
+	Word      string
+	AllowWord string
+	StartPos  int
+	EndPos    int
+	Length    int
+	Allowed   bool
 }
 
 type removeText struct {
@@ -58,13 +58,13 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 
 	for _, t := range bans {
 		item := Detected{
-			word:     string(t.Word),
-			startPos: t.Pos,
-			endPos:   t.Pos + len(t.Word),
-			length:   len(t.Word),
-			allowed:  false,
+			Word:     string(t.Word),
+			StartPos: t.Pos,
+			EndPos:   t.Pos + len(t.Word),
+			Length:   len(t.Word),
+			Allowed:  false,
 		}
-		item.oriWord = item.word
+		item.OriWord = item.Word
 		detected = append(detected, item)
 	}
 
@@ -79,9 +79,9 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 			endPos := t.Pos + len(t.Word)
 
 			for i, d := range detected {
-				if d.startPos >= startPos && d.endPos <= endPos {
-					detected[i].allowed = true
-					detected[i].allowWord = string(t.Word)
+				if d.StartPos >= startPos && d.EndPos <= endPos {
+					detected[i].Allowed = true
+					detected[i].AllowWord = string(t.Word)
 				}
 			}
 		}
@@ -90,24 +90,38 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 	if removeTexts != nil && len(removeTexts) > 0 && len(detected) > 0 {
 		for i, detect := range detected {
 			for _, re := range removeTexts {
-				if re.pos >= detect.endPos {
+				if re.pos >= detect.EndPos {
 					break
 				}
-				if re.pos <= detect.startPos {
-					detect.startPos += re.length
+				if re.pos <= detect.StartPos {
+					detect.StartPos += re.length
 				}
-				detect.endPos += re.length
+				detect.EndPos += re.length
 			}
-			detect.length = detect.endPos - detect.startPos
-			detect.oriWord = string(textRune[detect.startPos:detect.endPos])
+			detect.Length = detect.EndPos - detect.StartPos
+			detect.OriWord = string(textRune[detect.StartPos:detect.EndPos])
 			detected[i] = detect
 		}
 	}
 
 	if len(detected) > 0 {
-		for _, d := range detected {
-			if !d.allowed {
-				for j := d.startPos; j < d.endPos; j++ {
+		for i, d := range detected {
+			// 공백을 제외하고 단어에 정규식에 제외된 문자가 너무 많이 포함되면 금칙어 제외
+			if !d.Allowed && removeTexts != nil {
+				wordLen := utf8.RuneCountInString(d.Word)
+				oriWordLen := utf8.RuneCountInString(strings.ReplaceAll(d.OriWord, " ", ""))
+				if wordLen <= 5 {
+					wordLen += 5
+				} else {
+					wordLen *= 2
+				}
+				if oriWordLen > wordLen {
+					detected[i].Allowed = true
+				}
+			}
+
+			if !d.Allowed {
+				for j := d.StartPos; j < d.EndPos; j++ {
 					textRune[j] = replaceChar
 				}
 			}

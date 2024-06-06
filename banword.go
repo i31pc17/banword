@@ -2,6 +2,7 @@ package banword
 
 import (
 	goahocorasick "github.com/anknown/ahocorasick"
+	"github.com/i31pc17/zerowidth"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -36,7 +37,7 @@ func NewDetector(banWords []string, allowWords []string) *Detection {
 }
 
 func (detector *Detection) BanWords(text string, replaceChar rune, pattern string) (string, []Detected, error) {
-	checkText := text
+	checkText := strings.ToLower(text)
 	textRune := []rune(text)
 	var removeTexts []removeText
 	if len(pattern) > 0 {
@@ -110,7 +111,14 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 			// 공백을 제외하고 단어에 정규식에 제외된 문자가 너무 많이 포함되면 금칙어 제외
 			if !d.Allowed && removeTexts != nil {
 				wordLen := utf8.RuneCountInString(d.Word)
-				oriWordLen := utf8.RuneCountInString(strings.ReplaceAll(d.OriWord, " ", ""))
+				// 공백 제거, 안보이는 문자도 제거 해서 검사
+				oriWord := strings.ReplaceAll(d.OriWord, " ", "")
+				zw := zerowidth.NewZeroWidth()
+				zwStr, err := zw.Remove(oriWord)
+				if err == nil {
+					oriWord = zwStr
+				}
+				oriWordLen := utf8.RuneCountInString(oriWord)
 				if wordLen <= 5 {
 					wordLen += 5
 				} else {
@@ -135,7 +143,7 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 func (detector *Detection) getBanWords() [][]rune {
 	var banWords [][]rune
 	for _, word := range detector.banWords {
-		banWords = append(banWords, []rune(word))
+		banWords = append(banWords, []rune(strings.ToLower(word)))
 	}
 	return banWords
 }
@@ -143,7 +151,7 @@ func (detector *Detection) getBanWords() [][]rune {
 func (detector *Detection) getAllowWords() [][]rune {
 	var allowWords [][]rune
 	for _, word := range detector.allowWords {
-		allowWords = append(allowWords, []rune(word))
+		allowWords = append(allowWords, []rune(strings.ToLower(word)))
 	}
 	return allowWords
 }

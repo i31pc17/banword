@@ -113,11 +113,11 @@ func (detector *Detection) BanWords(text string, replaceChar rune, pattern strin
 				wordLen := utf8.RuneCountInString(d.Word)
 				// 공백 제거, 안보이는 문자도 제거 해서 검사
 				oriWord := strings.ReplaceAll(d.OriWord, " ", "")
-				zw := zerowidth.NewZeroWidth()
-				zwStr, err := zw.Remove(oriWord)
+				cleanWord, err := cleanText(oriWord)
 				if err == nil {
-					oriWord = zwStr
+					oriWord = cleanWord
 				}
+
 				oriWordLen := utf8.RuneCountInString(oriWord)
 				if wordLen <= 5 {
 					wordLen += 5
@@ -185,4 +185,25 @@ func matchText(pattern string, input string) (string, []removeText, error) {
 	}
 
 	return strings.Join(matches, ""), removeTexts, nil
+}
+
+func cleanText(text string) (string, error) {
+	zw := zerowidth.NewZeroWidth()
+
+	text, err := zw.Remove(text)
+	if err != nil {
+		return "", err
+	}
+
+	text, err = zw.RemoveSpace(text)
+	if err != nil {
+		return "", err
+	}
+
+	text, err = zw.RemoveVarSelector(text)
+	if err != nil {
+		return "", err
+	}
+
+	return text, nil
 }
